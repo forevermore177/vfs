@@ -494,7 +494,7 @@ string TEE = "\xE2\x94\x9C\xE2\x94\x80\xE2\x94\x80 ";
 string LAST = "\xE2\x94\x94\xE2\x94\x80\xE2\x94\x80 ";
 // │   //
 string VERT = "\xE2\x94\x82   ";
-void dfs(string pre, int now_dir_id,string &ans){
+void dfs(const string &pre, int now_dir_id,string &ans){
     auto &d = get<dir>(datas[now_dir_id]);
     int check = d.child.size();
     for (auto it = d.child.begin(); it != d.child.end(); it++,check--){
