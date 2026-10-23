@@ -1,0 +1,25 @@
+# Mac系统文件
+.DS_Store
+
+# 编译产物和二进制文件
+vfs_core
+vfs_bonus
+*.out
+*.dSYM/
+1383
+temp_test
+
+# 数据集、PDF和测试脚本
+data_bonus_public/
+data_core_public/
+README.pdf
+test_bonus.sh
+test_core.sh
+profile.json.gz
+
+# 其他无关文件
+.cache/
+Michelle/
+1383.cpp
+temp_test.cpp
+test.md
