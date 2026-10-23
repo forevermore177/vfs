@@ -23,7 +23,6 @@
         6. rm       fid; variant_name; variant_id
 */
 
-#include <ctime>
 #include <iostream>
 #include <map>
 #include <set>
