@@ -6,13 +6,12 @@
     4. 文件应提供自身的信息，比如name、type和content
     5. 需要实现删除和插入功能
 二、文本读写
-    1. 其实没那么难🤪但是撤销write就难了🤡
 三、撤销与重做
     1. 总原则：
         每次成功的操作都要传递一些参数，然后带上执行的命令存入 指令栈；
         每次undo利用指令栈的信息撤回，同时再带上一些信息存入  撤销栈；
         每次redo利用撤销栈的信息恢复，同时再带上一些信息存入  指令栈。
-    2. 需要的信息(我认为应该已经足够🤔)
+    2. 需要的信息
         1. mkdir    fid; dir_name; dir_id
         2. create   fid; file_name; file_id
         3. append   file_id; content
@@ -91,6 +90,7 @@ void mkdir(){
         return;
     }
     datas.push_back((dir){cur_dir_id,{},{}});
+    //扩容可能会导致原有的地址失效，因此不能把引用写前面
     dir &curd = get<dir>(datas[cur_dir_id]); // cur_dir
     curd.child.insert({name , datas.size() - 1});
     undo_stack.push_back(do_make{cur_dir_id,(int)datas.size() - 1, name});
@@ -105,7 +105,7 @@ void cd() {
         try_id = 0;
         pos = 1;
     }
-    string nowdir = "";
+    string nowdir = "";//读取路径中的文件名
     while (pos < path.size() || nowdir != "") { // to check
         if (pos == path.size() || path[pos] == '/') {
             if (nowdir == "..") {
@@ -138,7 +138,7 @@ void cd() {
     undo_stack.push_back(do_cd{cur_dir_id,try_id});
     cur_dir_id = try_id;
 }
-void newcontent (string &content) {
+void newcontent (string &content) { //截取""中的内容
     int pos = 0;
     while (content[pos] != '\"') pos++;
     content = content.substr(pos + 1,content.size() - pos - 1);
@@ -146,13 +146,13 @@ void newcontent (string &content) {
     while (content[pos] != '\"') pos--;
     content.resize(pos);
 }
-vector<unsigned char>split(const string &line){
+vector<unsigned char>split(const string &line){//针对bin文件的分词
     vector<unsigned char>tok;
     string word="";
     for (char ch : line){
         if (ch==' '){
             if (!word.empty()){
-                int x = stoi(word, nullptr, 16);
+                int x = stoi(word, nullptr, 16);// 将word按16进制解析成int
                 tok.push_back(static_cast<unsigned char>(x)); // don't forget the ()
                 word = "";
             }
@@ -207,7 +207,7 @@ bool file_check(const string &name, int mode){
     //check 3: mode = 0 expect to be txt or md; mode = 1 expect to be bin
     if (get<dir>(datas[cur_dir_id]).child.count(name) == 0) 
         return false;
-    int target_id =get<dir>(datas[cur_dir_id]).child[name];
+    int target_id = get<dir>(datas[cur_dir_id]).child[name];
     if (holds_alternative<dir>(datas[target_id]))
         return false; 
     if (get<file>(datas[target_id]).type == bin) {
@@ -228,7 +228,7 @@ void append(){
         cout << "Invalid operation\n";
         return;
     }
-    int target_id =get<dir>(datas[cur_dir_id]).child[name];
+    int target_id = get<dir>(datas[cur_dir_id]).child[name];
     get<dir>(datas[cur_dir_id]).select.erase({name,cal_size(target_id)});
     file &target = get<file>(datas[target_id]);// & is important, or changing target won't make a real change !
     target.text += content;
@@ -242,7 +242,7 @@ void cat(){
         cout << "Invalid operation\n";
         return;
     }
-    int target_id =get<dir>(datas[cur_dir_id]).child[name];
+    int target_id = get<dir>(datas[cur_dir_id]).child[name];
     cout << name << ":" << get<file>(datas[target_id]).text << "\n";
 }
 const string hex_list = "0123456789ABCDEF";
@@ -262,10 +262,9 @@ void read(){
     }
     string ans = "";
     for (int i = offset; i < offset + length; i++) {
-        if (i != offset) ans += " ";
-        ans += hex_list[cont[i] >> 4];
-        ans += hex_list[cont[i] & 0x0F];
-        // seem that it's forbidden to print a "" in the end !
+        if (i != offset) ans += " ";// seem that it's forbidden to print a "" in the end !
+        ans += hex_list[cont[i] >> 4];  //前4位
+        ans += hex_list[cont[i] & 0x0F];//后4位
     }
     cout << name << ":" << ans << "\n";
 }
@@ -317,7 +316,7 @@ void ls(){
     }
     cout << ans;
 }
-vector<string> is_r(const string &line){
+vector<string> is_r(const string &line){//分词
     vector<string>tok;
     string word="";
     for (char ch : line){
@@ -341,9 +340,9 @@ void rm() {
     getline(cin,line);
     vector<string> tok = is_r(line);
     string name;
-    if (tok.size() == 2)
+    if (tok.size() == 2)//rm -r
         name = tok[1];
-    else name = tok[0];
+    else name = tok[0];//rm
     if (get<dir>(datas[cur_dir_id]).child.count(name) == 0) {
         cout << "Invalid operation\n";
         return;
@@ -416,7 +415,6 @@ void undo(){
         file &f = get<file>(datas[temp.file_id]);
         d.select.erase({temp.name, cal_size(temp.file_id)});
         f.text.resize(f.text.size() - temp.content.size());
-        //substr < resize 
         d.select.insert({temp.name, cal_size(temp.file_id)});
     }
     else if (holds_alternative<do_cd>(cmd)) {
